@@ -122,14 +122,19 @@ void barycentricTriangularInterpolation(DrawingWindow &window)
 
 void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_param)
 {
+	uint32_t colour = (255 << 24) + (int(colour_param.red) << 16) + (int(colour_param.green) << 8) + int(colour_param.blue);
+	if (from.x == to.x && from.y==to.y){
+		window.setPixelColour(from.x, from.y, colour);
+		return;
+	}
 	float x_dist = to.x - from.x;
 	float y_dist = to.y - from.y;
 
 	float numberOfSteps = fmax(abs(x_dist), abs(y_dist));
 	float x_spacing = x_dist / numberOfSteps;
 	float y_spacing = y_dist / numberOfSteps;
-	uint32_t colour = (255 << 24) + (int(colour_param.red) << 16) + (int(colour_param.green) << 8) + int(colour_param.blue);
-	for (int i = 0; i < numberOfSteps; i++)
+	
+	for (int i = 0; i <= numberOfSteps; i++)
 	{
 		float x = from.x + (x_spacing * i);
 		float y = from.y + (y_spacing * i);
@@ -143,6 +148,27 @@ void strokedTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colo
 	drawLine(window, triangle.v0(), triangle.v1(), colour);
 	drawLine(window, triangle.v1(), triangle.v2(), colour);
 	drawLine(window, triangle.v2(), triangle.v0(), colour);
+}
+
+// returns a vector of all the points between p1 and p2
+std::vector<CanvasPoint> interpolate2Coords(CanvasPoint p1, CanvasPoint p2)
+{
+	std::vector<CanvasPoint> pointsBetween;
+	float x_dist = p2.x - p1.x;
+	float y_dist = p2.y - p1.y;
+
+	float numberOfSteps = fmax(abs(x_dist), abs(y_dist));
+	float x_spacing = x_dist / numberOfSteps;
+	float y_spacing = y_dist / numberOfSteps;
+
+	for (int i = 0; i <= numberOfSteps; i++)
+	{
+		float x = p1.x + (x_spacing * i);
+		float y = p1.y + (y_spacing * i);
+
+		pointsBetween.push_back(CanvasPoint(x, y));
+	}
+	return pointsBetween;
 }
 
 void fillFlatTopTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
@@ -163,9 +189,9 @@ void fillFlatTopTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour 
 	float currentXRight = bottom.x;
 
 	//draw lines top to bottom, left to right
-	for(int i = bottom.y; i > topLeft.y; i--)
+	for(int i = bottom.y; i >= topLeft.y; i--)  // Changed > to >= to include top edge
 	{
-		drawLine(window, CanvasPoint(currentXLeft, i), CanvasPoint(currentXRight, i), colour_param);
+		drawLine(window, CanvasPoint(round(currentXLeft), i), CanvasPoint(round(currentXRight), i), colour_param);
 		currentXLeft -= invslopeLeft;
 		currentXRight -= invslopeRight;
 	}
@@ -192,15 +218,15 @@ void fillFlatBottomTriangle(DrawingWindow &window, CanvasTriangle triangle, Colo
 	//draw lines top to bottom, left to right
 	for (int i = top.y; i <= bottomLeft.y; i++)
 	{
-		drawLine(window, CanvasPoint(currentXLeft, i), CanvasPoint(currentXRight, i), colour_param);
+		drawLine(window, CanvasPoint(round(currentXLeft), i), CanvasPoint(round(currentXRight), i), colour_param);
 		currentXLeft += invslopeLeft;
 		currentXRight += invslopeRight;
 	}
 
 
 }
-void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
-{
+
+std::vector<CanvasPoint> sortTriangleVertices(CanvasTriangle triangle){
 	// sort vertices by vertical pos - top to bottom
 	CanvasPoint v0 = triangle.v0();
 	CanvasPoint v1 = triangle.v1();
@@ -213,9 +239,48 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 	if (v1.y > v2.y)
 		std::swap(v1, v2);
 
-	CanvasPoint top = v0;    // smallest Y = top of screen
-	CanvasPoint middle = v1;
-	CanvasPoint bottom = v2; // largest Y = bottom of screen
+	std::vector<CanvasPoint> topToBottom;
+	topToBottom.push_back(v0); //smallest Y  = top of screen
+	topToBottom.push_back(v1);
+	topToBottom.push_back(v2); // largest Y = bottom of screen
+
+	return topToBottom;
+
+
+
+}
+
+std::vector<CanvasTriangle> splitTriangle(CanvasTriangle triangle){
+	std::vector<CanvasTriangle> triangles;
+	CanvasPoint top = triangle.v0();    // smallest Y = top of screen
+	CanvasPoint middle = triangle.v1();
+	CanvasPoint bottom = triangle.v2(); // largest Y = bottom of screen
+
+	// Calculate the extra point on the edge from bottom to top at middle.y
+	// Using the formula: x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+	float extraPointX = bottom.x + (middle.y - bottom.y) * (top.x - bottom.x) / (top.y - bottom.y);
+	CanvasPoint extraPoint(round(extraPointX), middle.y);
+
+	// divide triangle into 2 triangles
+	//bottomleft, bottomright, top
+	CanvasTriangle flatBottomTriangle(middle, extraPoint, top);
+
+	//topleft, topright, bottom
+	CanvasTriangle flatTopTriangle(middle, extraPoint, bottom);
+
+	triangles.push_back(flatBottomTriangle);
+	triangles.push_back(flatTopTriangle);
+
+	return triangles;
+}
+
+void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
+{
+	std::vector<CanvasPoint> sortedVertices = sortTriangleVertices(triangle);
+
+	CanvasPoint top = sortedVertices[0];    // smallest Y = top of screen
+	CanvasPoint middle = sortedVertices[1];
+	CanvasPoint bottom = sortedVertices[2]; // largest Y = bottom of screen
 
 	// check for flat top or flat bottom
 	if (top.y == middle.y) // flat top
@@ -234,25 +299,15 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 	}
 	else
 	{
-		// Calculate the extra point on the edge from bottom to top at middle.y
-		// Using the formula: x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
-		float extraPointX = bottom.x + (middle.y - bottom.y) * (top.x - bottom.x) / (top.y - bottom.y);
-		CanvasPoint extraPoint(extraPointX, middle.y);
-
-		// divide triangle into 2 triangles
-
-		//bottomleft, bottomright, top
-		CanvasTriangle flatBottomTriangle(middle, extraPoint, top);
-
-		//topleft, topright, bottom
-		CanvasTriangle flatTopTriangle(middle, extraPoint, bottom);
+		//split triangle into 2
+		std::vector<CanvasTriangle> splitTriangles = splitTriangle(CanvasTriangle(top, middle, bottom));
+		CanvasTriangle flatBottomTriangle = splitTriangles[0];
+		CanvasTriangle flatTopTriangle = splitTriangles[1];
 
 		// fill top triangle
 		fillFlatTopTriangle(window, flatTopTriangle, colour_param);
-
 		// fill bottom triangle
 		fillFlatBottomTriangle(window, flatBottomTriangle, colour_param);
-
 	}
 }
 
@@ -290,7 +345,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window)
 			CanvasPoint v1 = randCoord();
 			CanvasPoint v2 = randCoord();
 			drawFilledTriangle(window, CanvasTriangle(v0, v1, v2), randColour);
-			strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
+			//strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
 		}
 	}
 	else if (event.type == SDL_MOUSEBUTTONDOWN)
