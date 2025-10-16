@@ -6,12 +6,14 @@
 #include <glm/glm.hpp>
 #include <CanvasPoint.h>
 #include <Colour.h>
+#include <TextureMap.h>
 
 #define WIDTH 320
 #define HEIGHT 240
 
-std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues)
-{
+// similar to interpolateSingleFloats but this time with 3-element values
+std::vector<float> interpolateSingleFloats(float from, float to, int numberOfValues){
+
 	// create an evenly spaced list of floats between from and to, size numberOfValues
 	std::vector<float> values;
 	float spacing = (to - from) / (numberOfValues - 1);
@@ -22,9 +24,8 @@ std::vector<float> interpolateSingleFloats(float from, float to, int numberOfVal
 	return values;
 }
 
-std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues)
-{
-	// similar to interpolateSingleFloats but this time with 3-element values
+std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues){
+
 	std::vector<glm::vec3> values;
 	std::vector<float> spacing;
 	for (int i = 0; i < 3; i++)
@@ -38,8 +39,7 @@ std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 t
 	return values;
 }
 
-void draw(DrawingWindow &window)
-{
+void draw(DrawingWindow &window){
 	window.clearPixels();
 	for (size_t y = 0; y < window.height; y++)
 	{
@@ -54,8 +54,8 @@ void draw(DrawingWindow &window)
 	}
 }
 
-void drawGrey(DrawingWindow &window)
-{
+void drawGrey(DrawingWindow &window){
+
 	window.clearPixels();
 	std::vector<float> values = interpolateSingleFloats(255, 0, window.width);
 	for (size_t y = 0; y < window.height; y++)
@@ -71,8 +71,8 @@ void drawGrey(DrawingWindow &window)
 	}
 }
 
-void twoDimensionInterpolation(DrawingWindow &window)
-{
+void twoDimensionInterpolation(DrawingWindow &window){
+
 	glm::vec3 topLeft(255, 0, 0);	   // red
 	glm::vec3 topRight(0, 0, 255);	   // blue
 	glm::vec3 bottomRight(0, 255, 0);  // green
@@ -96,8 +96,8 @@ void twoDimensionInterpolation(DrawingWindow &window)
 	}
 }
 
-void barycentricTriangularInterpolation(DrawingWindow &window)
-{
+void barycentricTriangularInterpolation(DrawingWindow &window){
+
 	glm::vec2 v0(0, window.height - 1);					   // bottom left
 	glm::vec2 v1((window.width - 1) / 2, 0);			   // top
 	glm::vec2 v2((window.width - 1), (window.height - 1)); // bottom right
@@ -120,10 +120,11 @@ void barycentricTriangularInterpolation(DrawingWindow &window)
 	}
 }
 
-void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_param)
-{
+void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_param){
+
 	uint32_t colour = (255 << 24) + (int(colour_param.red) << 16) + (int(colour_param.green) << 8) + int(colour_param.blue);
-	if (from.x == to.x && from.y==to.y){
+	if (from.x == to.x && from.y == to.y)
+	{
 		window.setPixelColour(from.x, from.y, colour);
 		return;
 	}
@@ -133,7 +134,7 @@ void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour co
 	float numberOfSteps = fmax(abs(x_dist), abs(y_dist));
 	float x_spacing = x_dist / numberOfSteps;
 	float y_spacing = y_dist / numberOfSteps;
-	
+
 	for (int i = 0; i <= numberOfSteps; i++)
 	{
 		float x = from.x + (x_spacing * i);
@@ -143,16 +144,16 @@ void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour co
 	}
 }
 
-void strokedTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour)
-{
+void strokedTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour){
+
 	drawLine(window, triangle.v0(), triangle.v1(), colour);
 	drawLine(window, triangle.v1(), triangle.v2(), colour);
 	drawLine(window, triangle.v2(), triangle.v0(), colour);
 }
 
 // returns a vector of all the points between p1 and p2
-std::vector<CanvasPoint> interpolate2Coords(CanvasPoint p1, CanvasPoint p2)
-{
+std::vector<CanvasPoint> interpolate2Coords(CanvasPoint p1, CanvasPoint p2){
+
 	std::vector<CanvasPoint> pointsBetween;
 	float x_dist = p2.x - p1.x;
 	float y_dist = p2.y - p1.y;
@@ -171,8 +172,8 @@ std::vector<CanvasPoint> interpolate2Coords(CanvasPoint p1, CanvasPoint p2)
 	return pointsBetween;
 }
 
-void fillFlatTopTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
-{
+void fillFlatTopTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param){
+
 	// Get the vertices of the triangle
 	CanvasPoint topLeft = triangle.v0();
 	CanvasPoint topRight = triangle.v1();
@@ -188,18 +189,17 @@ void fillFlatTopTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour 
 	float currentXLeft = bottom.x;
 	float currentXRight = bottom.x;
 
-	//draw lines top to bottom, left to right
-	for(int i = bottom.y; i >= topLeft.y; i--)  // Changed > to >= to include top edge
+	// draw lines top to bottom, left to right
+	for (int i = bottom.y; i >= topLeft.y; i--)
 	{
 		drawLine(window, CanvasPoint(round(currentXLeft), i), CanvasPoint(round(currentXRight), i), colour_param);
 		currentXLeft -= invslopeLeft;
 		currentXRight -= invslopeRight;
 	}
-
 }
 
-void fillFlatBottomTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
-{
+void fillFlatBottomTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param){
+
 	// Get the vertices of the triangle
 	CanvasPoint bottomLeft = triangle.v0();
 	CanvasPoint bottomRight = triangle.v1();
@@ -215,19 +215,18 @@ void fillFlatBottomTriangle(DrawingWindow &window, CanvasTriangle triangle, Colo
 	float currentXLeft = top.x;
 	float currentXRight = top.x;
 
-	//draw lines top to bottom, left to right
+	// draw lines top to bottom, left to right
 	for (int i = top.y; i <= bottomLeft.y; i++)
 	{
 		drawLine(window, CanvasPoint(round(currentXLeft), i), CanvasPoint(round(currentXRight), i), colour_param);
 		currentXLeft += invslopeLeft;
 		currentXRight += invslopeRight;
 	}
-
-
 }
 
+// sort vertices by vertical pos - top to bottom
 std::vector<CanvasPoint> sortTriangleVertices(CanvasTriangle triangle){
-	// sort vertices by vertical pos - top to bottom
+
 	CanvasPoint v0 = triangle.v0();
 	CanvasPoint v1 = triangle.v1();
 	CanvasPoint v2 = triangle.v2();
@@ -240,19 +239,37 @@ std::vector<CanvasPoint> sortTriangleVertices(CanvasTriangle triangle){
 		std::swap(v1, v2);
 
 	std::vector<CanvasPoint> topToBottom;
-	topToBottom.push_back(v0); //smallest Y  = top of screen
+
+	topToBottom.push_back(v0); // smallest Y  = top of screen
 	topToBottom.push_back(v1);
 	topToBottom.push_back(v2); // largest Y = bottom of screen
 
 	return topToBottom;
-
-
-
 }
 
-std::vector<CanvasTriangle> splitTriangle(CanvasTriangle triangle){
+// calculate proportional distance of point along line from "from" to "to"
+float proportion(CanvasPoint from, CanvasPoint to, CanvasPoint point){
+
+	float lineLength = sqrt(pow((to.x - from.x), 2) + pow((to.y - from.y), 2));
+	float pointLength = sqrt(pow((point.x - from.x), 2) + pow((point.y - from.y), 2));
+
+	return pointLength / lineLength;
+}
+
+// given a start and end coord, return pos of a single pixel on that line with a given proportion
+TexturePoint texturePointOnLine(TexturePoint from, TexturePoint to, float proportion){
+	float x_dist = to.x - from.x;
+	float y_dist = to.y - from.y;
+
+	float x = from.x + (x_dist * proportion);
+	float y = from.y + (y_dist * proportion);
+	// print original and new points
+	return TexturePoint(round(x), round(y));
+}
+
+std::vector<CanvasTriangle> splitTriangle(CanvasTriangle triangle, bool isTexture){
 	std::vector<CanvasTriangle> triangles;
-	CanvasPoint top = triangle.v0();    // smallest Y = top of screen
+	CanvasPoint top = triangle.v0(); // smallest Y = top of screen
 	CanvasPoint middle = triangle.v1();
 	CanvasPoint bottom = triangle.v2(); // largest Y = bottom of screen
 
@@ -261,11 +278,20 @@ std::vector<CanvasTriangle> splitTriangle(CanvasTriangle triangle){
 	float extraPointX = bottom.x + (middle.y - bottom.y) * (top.x - bottom.x) / (top.y - bottom.y);
 	CanvasPoint extraPoint(round(extraPointX), middle.y);
 
+	if (isTexture)
+	{
+		float proportion = (float)(middle.y - bottom.y) / (float)(top.y - bottom.y);
+		float texturePointX = bottom.texturePoint.x + proportion * (top.texturePoint.x - bottom.texturePoint.x);
+		float texturePointY = bottom.texturePoint.y + proportion * (top.texturePoint.y - bottom.texturePoint.y);
+
+		extraPoint.texturePoint = TexturePoint(round(texturePointX), round(texturePointY));
+	}
+
 	// divide triangle into 2 triangles
-	//bottomleft, bottomright, top
+	// bottomleft, bottomright, top
 	CanvasTriangle flatBottomTriangle(middle, extraPoint, top);
 
-	//topleft, topright, bottom
+	// topleft, topright, bottom
 	CanvasTriangle flatTopTriangle(middle, extraPoint, bottom);
 
 	triangles.push_back(flatBottomTriangle);
@@ -274,11 +300,10 @@ std::vector<CanvasTriangle> splitTriangle(CanvasTriangle triangle){
 	return triangles;
 }
 
-void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param)
-{
-	std::vector<CanvasPoint> sortedVertices = sortTriangleVertices(triangle);
+void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour colour_param){
 
-	CanvasPoint top = sortedVertices[0];    // smallest Y = top of screen
+	std::vector<CanvasPoint> sortedVertices = sortTriangleVertices(triangle);
+	CanvasPoint top = sortedVertices[0]; // smallest Y = top of screen
 	CanvasPoint middle = sortedVertices[1];
 	CanvasPoint bottom = sortedVertices[2]; // largest Y = bottom of screen
 
@@ -286,21 +311,21 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 	if (top.y == middle.y) // flat top
 	{
 		CanvasTriangle flatTopTriangle(middle, top, bottom);
-		//topleft, topright, bottom
+		// topleft, topright, bottom
 		fillFlatTopTriangle(window, flatTopTriangle, colour_param);
 		return;
 	}
 	else if (middle.y == bottom.y) // flat bottom
 	{
 		CanvasTriangle flatBottomTriangle(bottom, middle, top);
-		//bottomleft, bottomright, top
+		// bottomleft, bottomright, top
 		fillFlatBottomTriangle(window, flatBottomTriangle, colour_param);
 		return;
 	}
 	else
 	{
-		//split triangle into 2
-		std::vector<CanvasTriangle> splitTriangles = splitTriangle(CanvasTriangle(top, middle, bottom));
+		// split triangle into 2
+		std::vector<CanvasTriangle> splitTriangles = splitTriangle(CanvasTriangle(top, middle, bottom), false);
 		CanvasTriangle flatBottomTriangle = splitTriangles[0];
 		CanvasTriangle flatTopTriangle = splitTriangles[1];
 
@@ -311,15 +336,204 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle triangle, Colour c
 	}
 }
 
-CanvasPoint randCoord()
+std::vector<std::vector<uint32_t>> loadTexturePack(){
+
+	TextureMap texture("/home/leonie/CG2025/Weekly Workbooks/01 Introduction and Orientation/extras/RedNoise/src/texture.ppm");
+	int width = texture.width;
+	int height = texture.height;
+	std::vector<std::vector<uint32_t>> pixels;
+	pixels.resize(height, std::vector<uint32_t>(width));
+
+	// get each row of pixels and store in 2D vector
+	for (size_t y = 0; y < height; y++)
+	{
+		for (size_t x = 0; x < width; x++)
+		{
+			pixels[y][x] = texture.pixels[(y * width) + x];
+		}
+	}
+	return pixels;
+}
+
+void drawTexturedFlatTop(CanvasTriangle triangle, std::vector<std::vector<uint32_t>> texturePixels, DrawingWindow &window){
+
+	// Get the vertices of the triangle
+	CanvasPoint topLeft = triangle.v0();
+	CanvasPoint topRight = triangle.v1();
+	CanvasPoint bottom = triangle.v2();
+
+	// Ensure topLeft is left of topRight
+	if (topLeft.x > topRight.x)
+		std::swap(topLeft, topRight);
+
+	float invslopeLeft = (bottom.x - topLeft.x) / (bottom.y - topLeft.y);
+	float invslopeRight = (bottom.x - topRight.x) / (bottom.y - topRight.y);
+
+	// Calculate texture slopes
+	float texXSlopeLeft = (bottom.texturePoint.x - topLeft.texturePoint.x) / (bottom.y - topLeft.y);
+	float texYSlopeLeft = (bottom.texturePoint.y - topLeft.texturePoint.y) / (bottom.y - topLeft.y);
+	float texXSlopeRight = (bottom.texturePoint.x - topRight.texturePoint.x) / (bottom.y - topRight.y);
+	float texYSlopeRight = (bottom.texturePoint.y - topRight.texturePoint.y) / (bottom.y - topRight.y);
+
+	float currentXLeft = bottom.x;
+	float currentXRight = bottom.x;
+	float currentTexXLeft = bottom.texturePoint.x;
+	float currentTexYLeft = bottom.texturePoint.y;
+	float currentTexXRight = bottom.texturePoint.x;
+	float currentTexYRight = bottom.texturePoint.y;
+
+	// draw lines top to bottom, left to right
+	for (int y = bottom.y; y >= topLeft.y; y--)
+	{
+		int startX = round(currentXLeft);
+		int endX = round(currentXRight);
+
+		if (startX > endX)
+		{
+			std::swap(startX, endX);
+			std::swap(currentTexXLeft, currentTexXRight);
+			std::swap(currentTexYLeft, currentTexYRight);
+		}
+
+		// Draw horizontal line with texture interpolation
+		for (int x = startX; x <= endX; x++)
+		{
+			if (x >= 0 && x < window.width && y >= 0 && y < window.height)
+			{
+				// Calculate horizontal progress (0.0 to 1.0)
+				float horizontalProgress = 0;
+				if (endX != startX)
+					horizontalProgress = (float)(x - startX) / (endX - startX);
+
+				// Interpolate texture coordinates
+				float texX = currentTexXLeft + horizontalProgress * (currentTexXRight - currentTexXLeft);
+				float texY = currentTexYLeft + horizontalProgress * (currentTexYRight - currentTexYLeft);
+				uint32_t colour = texturePixels[round(texY)][round(texX)];
+				window.setPixelColour(x, y, colour);
+			}
+		}
+
+		currentXLeft -= invslopeLeft;
+		currentXRight -= invslopeRight;
+		currentTexXLeft -= texXSlopeLeft;
+		currentTexYLeft -= texYSlopeLeft;
+		currentTexXRight -= texXSlopeRight;
+		currentTexYRight -= texYSlopeRight;
+	}
+}
+
+void drawTexturedFlatBottom(CanvasTriangle triangle, std::vector<std::vector<uint32_t>> texturePixels, DrawingWindow &window){
+
+	// Get the vertices of the triangle
+	CanvasPoint bottomLeft = triangle.v0();
+	CanvasPoint bottomRight = triangle.v1();
+	CanvasPoint top = triangle.v2();
+
+	// Ensure bottomLeft is left of bottomRight
+	if (bottomLeft.x > bottomRight.x)
+		std::swap(bottomLeft, bottomRight);
+
+	float invslopeLeft = (bottomLeft.x - top.x) / (bottomLeft.y - top.y);
+	float invslopeRight = (bottomRight.x - top.x) / (bottomRight.y - top.y);
+
+	// Calculate texture slopes
+	float texXSlopeLeft = (bottomLeft.texturePoint.x - top.texturePoint.x) / (bottomLeft.y - top.y);
+	float texYSlopeLeft = (bottomLeft.texturePoint.y - top.texturePoint.y) / (bottomLeft.y - top.y);
+	float texXSlopeRight = (bottomRight.texturePoint.x - top.texturePoint.x) / (bottomRight.y - top.y);
+	float texYSlopeRight = (bottomRight.texturePoint.y - top.texturePoint.y) / (bottomRight.y - top.y);
+
+	float currentXLeft = top.x;
+	float currentXRight = top.x;
+	float currentTexXLeft = top.texturePoint.x;
+	float currentTexYLeft = top.texturePoint.y;
+	float currentTexXRight = top.texturePoint.x;
+	float currentTexYRight = top.texturePoint.y;
+
+	// draw lines top to bottom, left to right
+	for (int y = top.y; y <= bottomLeft.y; y++)
+	{
+		int startX = round(currentXLeft);
+		int endX = round(currentXRight);
+
+		if (startX > endX)
+		{
+			std::swap(startX, endX);
+			std::swap(currentTexXLeft, currentTexXRight);
+			std::swap(currentTexYLeft, currentTexYRight);
+		}
+
+		// Draw horizontal line with texture interpolation
+		for (int x = startX; x <= endX; x++)
+		{
+			if (x >= 0 && x < window.width && y >= 0 && y < window.height)
+			{
+				// Calculate horizontal progress (0.0 to 1.0)
+				float horizontalProgress = 0;
+				if (endX != startX)
+					horizontalProgress = (float)(x - startX) / (endX - startX);
+
+				// Interpolate texture coordinates
+				float texX = currentTexXLeft + horizontalProgress * (currentTexXRight - currentTexXLeft);
+				float texY = currentTexYLeft + horizontalProgress * (currentTexYRight - currentTexYLeft);
+
+				uint32_t colour = texturePixels[round(texY)][round(texX)];
+				window.setPixelColour(x, y, colour);
+			}
+		}
+		currentXLeft += invslopeLeft;
+		currentXRight += invslopeRight;
+		currentTexXLeft += texXSlopeLeft;
+		currentTexYLeft += texYSlopeLeft;
+		currentTexXRight += texXSlopeRight;
+		currentTexYRight += texYSlopeRight;
+	}
+}
+
+void textureMapping(DrawingWindow &window, CanvasTriangle target){
+
+
+	std::vector<std::vector<uint32_t>> texturePixels = loadTexturePack();
+	std::vector<CanvasPoint> sortedTargetVertices = sortTriangleVertices(target);
+
+	CanvasPoint top = sortedTargetVertices[0]; // smallest Y = top of screen
+	CanvasPoint middle = sortedTargetVertices[1];
+	CanvasPoint bottom = sortedTargetVertices[2]; // largest Y = bottom of screen
+
+	// check if triangle needs splitting:
+	if (top.y == middle.y) // flat top
+	{
+		CanvasTriangle flatTopTriangle(middle, top, bottom);
+		// topleft, topright, bottom
+		drawTexturedFlatTop(flatTopTriangle, texturePixels, window);
+		return;
+	}
+	else if (middle.y == bottom.y) // flat bottom
+	{
+		CanvasTriangle flatBottomTriangle(bottom, middle, top);
+		// bottomleft, bottomright, top
+		drawTexturedFlatBottom(flatBottomTriangle, texturePixels, window);
+		return;
+	}
+	else
 {
+		// split triangle into 2
+		std::vector<CanvasTriangle> splitTriangles = splitTriangle(CanvasTriangle(top, middle, bottom), true);
+		CanvasTriangle flatBottomTriangle = splitTriangles[0];
+		CanvasTriangle flatTopTriangle = splitTriangles[1];
+		drawTexturedFlatTop(flatTopTriangle, texturePixels, window);
+		drawTexturedFlatBottom(flatBottomTriangle, texturePixels, window);
+	}
+}
+
+CanvasPoint randCoord(){
+
 	int randX = rand() % WIDTH;
 	int randY = rand() % HEIGHT;
 	return CanvasPoint(randX, randY);
 }
 
-void handleEvent(SDL_Event event, DrawingWindow &window)
-{
+void handleEvent(SDL_Event event, DrawingWindow &window){
+
 	if (event.type == SDL_KEYDOWN)
 	{
 		if (event.key.keysym.sym == SDLK_LEFT)
@@ -345,8 +559,21 @@ void handleEvent(SDL_Event event, DrawingWindow &window)
 			CanvasPoint v1 = randCoord();
 			CanvasPoint v2 = randCoord();
 			drawFilledTriangle(window, CanvasTriangle(v0, v1, v2), randColour);
-			//strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
+			strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
 		}
+		else if (event.key.keysym.sym == SDLK_l)
+		{
+			CanvasPoint v0 = CanvasPoint(160, 10);
+			v0.texturePoint = TexturePoint(195, 5);
+			CanvasPoint v1 = CanvasPoint(300, 230);
+			v1.texturePoint = TexturePoint(395, 380);
+			CanvasPoint v2 = CanvasPoint(10, 150);
+			v2.texturePoint = TexturePoint(65, 330);
+			textureMapping(window, CanvasTriangle(v0, v1, v2));
+			strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
+		}
+		else if (event.key.keysym.sym == SDLK_ESCAPE)
+			window.exitCleanly();
 	}
 	else if (event.type == SDL_MOUSEBUTTONDOWN)
 	{
@@ -355,8 +582,8 @@ void handleEvent(SDL_Event event, DrawingWindow &window)
 	}
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
+
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 	// top
@@ -375,8 +602,8 @@ int main(int argc, char *argv[])
 	CanvasPoint bottomMiddle(WIDTH / 2, HEIGHT);
 	CanvasPoint bottomRight(WIDTH, HEIGHT);
 
-	while (true)
-	{
+	while (true){
+
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event))
 			handleEvent(event, window);
