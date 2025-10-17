@@ -1,0 +1,16 @@
+Question 1: Colour Representation
+3808376175
+
+Question 2: OBJ File Content
+v, o, 0.0-1.0, newmtl
+
+Question 3: Extra Point
+418,387
+
+Question 4: Rasterising
+a) 161 and b) 357
+
+Question 5: Camera Orientation
+a) [-0.84,-0.16,0.52]
+b) [0.52,0,0.84] or [-0.52,0,-0.84]
+(Depending on whether (a) was correct or inverted)
