@@ -120,6 +120,7 @@ void barycentricTriangularInterpolation(DrawingWindow &window){
 	}
 }
 
+
 void drawLine(DrawingWindow &window, CanvasPoint from, CanvasPoint to, Colour colour_param){
 
 	uint32_t colour = (255 << 24) + (int(colour_param.red) << 16) + (int(colour_param.green) << 8) + int(colour_param.blue);
@@ -572,6 +573,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window){
 			textureMapping(window, CanvasTriangle(v0, v1, v2));
 			strokedTriangle(window, CanvasTriangle(v0, v1, v2), Colour(255, 255, 255));
 		}
+
 		else if (event.key.keysym.sym == SDLK_ESCAPE)
 			window.exitCleanly();
 	}
